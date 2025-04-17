@@ -1,0 +1,37 @@
+[[commands]]
+name = "help"
+aliases = ["h", "?"]
+description = "Shows available commands."
+expected_args = 0
+
+[[commands]]
+name = "help"
+aliases = ["h", "?"]
+description = "Shows help for a specific command."
+expected_args = 1
+arg_hints = ["command_name"]
+
+[[commands]]
+name = "quit"
+aliases = ["exit", "close"]
+description = "Exits the game."
+expected_args = 0
+
+[[commands]]
+name = "endturn"
+aliases = ["end", "finish"]
+description = "Ends your current turn."
+expected_args = 0
+
+[[commands]]
+name = "status"
+aliases = ["st", "info"]
+description = "Shows the current game status."
+expected_args = 0
+
+[[commands]]
+name = "build"
+description = "Builds a structure at a specified planet."
+expected_args = 2
+arg_hints = ["structure_type", "coordinates"]
+
