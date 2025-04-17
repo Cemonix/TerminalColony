@@ -1,8 +1,44 @@
+use std::{fmt, fs, io};
 use std::error::Error;
-use std::fmt;
-use std::fs;
 use std::collections::HashMap;
 use serde::Deserialize;
+
+#[derive(Debug)]
+pub enum CommandLoadError {
+    Io(io::Error),
+    Toml(toml::de::Error),
+}
+
+impl fmt::Display for CommandLoadError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CommandLoadError::Io(e) => write!(f, "Failed to read command configuration file: {}", e),
+            CommandLoadError::Toml(e) => write!(f, "Failed to parse command configuration file (TOML): {}", e),
+        }
+    }
+}
+
+impl Error for CommandLoadError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            CommandLoadError::Io(e) => Some(e),
+            CommandLoadError::Toml(e) => Some(e),
+        }
+    }
+}
+
+impl From<io::Error> for CommandLoadError {
+    fn from(err: io::Error) -> Self {
+        CommandLoadError::Io(err)
+    }
+}
+
+impl From<toml::de::Error> for CommandLoadError {
+    fn from(err: toml::de::Error) -> Self {
+        CommandLoadError::Toml(err)
+    }
+}
+
 
 #[derive(Debug)]
 pub struct CommandError {
@@ -65,7 +101,7 @@ pub struct CommandRegistry {
 }
 
 impl CommandRegistry {
-    pub fn load(config_path: &str) -> Result<Self, Box<dyn Error>> {
+    pub fn load(config_path: &str) -> Result<Self, CommandLoadError> {
         let toml_content = fs::read_to_string(config_path)?;
         let config: CommandsConfig = toml::from_str(&toml_content)?;
 
