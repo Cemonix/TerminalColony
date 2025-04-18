@@ -1,7 +1,11 @@
-use super::planet::Planet;
-use super::player::Player;
+use crate::cli::read_and_parse_input;
+use crate::cli::{ CommandLoadError, CommandRegistry };
 
-struct Turn {
+use super::CommandHandler;
+use super::Planet;
+use super::Player;
+
+pub struct Turn {
     turn_number: u32,
 }
 
@@ -23,43 +27,38 @@ impl Turn {
     }
 }
 
-pub struct Game {
+pub struct GameCore {
     turn: Turn,
+    command_handler: CommandHandler,
     current_player: String,
     players: Vec<Player>,
     planets: Vec<Planet>,
 }
 
-impl Game {
+impl GameCore {
     pub fn new() -> Self {
-        Game {
+        GameCore {
             turn: Turn::new(0),
+            command_handler: CommandHandler {},
             current_player: String::new(),
             players: Vec::new(),
             planets: Vec::new(),
         }
     }
 
-    pub fn run(&mut self) {
-        loop {
-            // Game logic goes here
-            // For example, you can call next_turn() to advance the game
-            self.turn.next_turn();
-            println!("Turn: {}", self.turn.get_turn_number());
-            
-            // Break condition for the loop (for demonstration purposes)
-            if self.turn.get_turn_number() >= 10 {
-                break;
-            }
-        }
+    pub fn get_turn(&self) -> &Turn {
+        &self.turn
+    }
+
+    pub fn get_command_handler(&self) -> &CommandHandler {
+        &self.command_handler
     }
     
-    fn add_player(&mut self, player: Player) {
+    pub fn add_player(&mut self, player: Player) {
         self.players.push(player);
     }
 
-    fn remove_player(&mut self, player_name: &str) {
+    pub fn remove_player(&mut self, player_name: &str) {
         self.players.retain(|player| player.get_name() != player_name);
     }
-
 }
