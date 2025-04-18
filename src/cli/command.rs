@@ -74,6 +74,21 @@ pub struct CommandDefinition {
     pub arg_hints: Vec<String>,
 }
 
+impl CommandDefinition {
+    pub fn print(&self) {
+        // TODO: Implement colorized output for command name and description in a table format
+        let args_str = self.arg_hints
+            .iter()
+            .map(|arg| format!("<{}>", arg))
+            .collect::<Vec<String>>()
+            .join(" ");
+
+        println!("Command: {} {}", self.name, args_str);
+        println!("{}", self.description);
+        println!()
+    }
+}
+
 #[derive(Deserialize, Debug)]
 struct CommandsConfig {
     commands: Vec<CommandDefinition>,
@@ -93,6 +108,26 @@ pub enum CommandExecution {
     Build(ParsedCommand),
     EndTurn(ParsedCommand),
     Quit(ParsedCommand),
+    UnknownInternal(ParsedCommand),
+}
+
+impl From<ParsedCommand> for CommandExecution {
+    fn from(parsed_command: ParsedCommand) -> Self {
+        match parsed_command.definition.name.as_str() {
+            "help" => CommandExecution::Help(parsed_command),
+            "status" => CommandExecution::Status(parsed_command),
+            "build" => CommandExecution::Build(parsed_command),
+            "endturn" => CommandExecution::EndTurn(parsed_command),
+            "quit" => CommandExecution::Quit(parsed_command),
+            _ => {
+                eprintln!(
+                    "Error: Command '{}' has no associated execution logic. Wrong configuration!",
+                    parsed_command.definition.name
+                );
+                CommandExecution::UnknownInternal(parsed_command)
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -145,22 +180,7 @@ impl CommandRegistry {
                             args: provided_args,
                         };
 
-                        match matching_def.name.as_str() {
-                            "help" => Ok(CommandExecution::Help(parsed_cmd)),
-                            "status" => Ok(CommandExecution::Status(parsed_cmd)),
-                            "build" => Ok(CommandExecution::Build(parsed_cmd)),
-                            "endturn" => Ok(CommandExecution::EndTurn(parsed_cmd)),
-                            "quit" => Ok(CommandExecution::Quit(parsed_cmd)),
-                            _ => {
-                                eprintln!(
-                                    "Error: Command '{}' has no associated execution logic. Wrong configuration!",
-                                    matching_def.name
-                                );
-                                Err(CommandError::new(&format!(
-                                    "Internal configuration error for command '{}'", matching_def.name
-                                )))
-                            }
-                        }
+                        Ok(parsed_cmd.into())
                     }
                     None => {
                         let expected_counts: Vec<String> = possible_defs.iter()
@@ -178,5 +198,13 @@ impl CommandRegistry {
                 command_name
             ))),
         }
+    }
+
+    pub fn get_all_command_definitions(&self) -> Vec<CommandDefinition> {
+        self.definitions.values().flat_map(|defs| defs.clone()).collect()
+    }
+
+    pub fn get_command_definitions(&self, command_name: &str) -> Option<&Vec<CommandDefinition>> {
+        self.definitions.get(command_name)
     }
 }
