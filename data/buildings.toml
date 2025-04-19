@@ -1,0 +1,95 @@
+[CommandCenter]
+name = "Command Center"
+max_level = 5
+
+[CommandCenter.upgrade_cost]
+energy = [100, 200, 300, 400, 500]
+minerals = [50, 100, 150, 200, 250]
+
+[FusionReactor]
+name = "Fusion Reactor"
+max_level = 10
+
+[FusionReactor.upgrade_cost]
+energy = [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
+minerals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+
+[FusionReactor.production]
+resource = "Energy"
+rate_per_level = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+
+[BatteryArray]
+name = "Battery Array"
+max_level = 15
+
+[BatteryArray.upgrade_cost]
+energy = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000]
+minerals = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]
+
+[BatteryArray.storage]
+resource = "Energy"
+capacity_per_level = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000]
+
+[GasExtractor]
+name = "Gas Extractor"
+max_level = 10
+
+[GasExtractor.upgrade_cost]
+energy = [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
+minerals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+
+[GasExtractor.production]
+resource = "Gas"
+rate_per_level = [25, 50, 75, 100, 150, 200, 350, 500, 700, 1000]
+
+[GasTank]
+name = "Gas Tank"
+max_level = 15
+
+[GasTank.upgrade_cost]
+energy = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000]
+minerals = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]
+
+[GasTank.storage]
+resource = "Gas"
+capacity_per_level = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000]
+
+[MineralMine]
+name = "Mineral Mine"
+max_level = 10
+
+[MineralMine.upgrade_cost]
+energy = [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
+minerals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+
+[MineralMine.production]
+resource = "Minerals"
+rate_per_level = [25, 50, 75, 100, 150, 200, 350, 500, 700, 1000]
+
+[MineralSilo]
+name = "Mineral Silo"
+max_level = 15
+
+[MineralSilo.upgrade_cost]
+energy = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000]
+minerals = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]
+
+[MineralSilo.storage]
+resource = "Minerals"
+capacity_per_level = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000]
+
+[OrbitalShipyard]
+name = "Orbital Shipyard"
+max_level = 5
+
+[OrbitalShipyard.upgrade_cost]
+energy = [100, 200, 300, 400, 500]
+minerals = [50, 100, 150, 200, 250]
+
+[ResearchLab]
+name = "Research Lab"
+max_level = 5
+
+[ResearchLab.upgrade_cost]
+energy = [100, 200, 300, 400, 500]
+minerals = [50, 100, 150, 200, 250]
