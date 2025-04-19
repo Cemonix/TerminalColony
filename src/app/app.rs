@@ -12,21 +12,22 @@ use ratatui::style::{Color, Style};
 use ratatui::widgets::Widget;
 use ratatui::{Frame, Terminal};
 
-use crate::game_core::{GameCore, CommandLoadError};
+use crate::game_core::game_core::GameCoreError;
+use crate::game_core::GameCore;
 
 use super::ui::UI;
 
 #[derive(Debug)]
 pub enum AppError {
     Io(std::io::Error),
-    CommandLoadError(CommandLoadError),
+    GameCoreError(GameCoreError),
 }
 
 impl std::fmt::Display for AppError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AppError::Io(err) => write!(f, "IO error: {}", err),
-            AppError::CommandLoadError(err) => write!(f, "Command load error: {}", err),
+            AppError::GameCoreError(err) => write!(f, "GameCore error: {}", err),
         }
     }
 }
@@ -35,7 +36,7 @@ impl Error for AppError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             AppError::Io(err) => Some(err),
-            AppError::CommandLoadError(err) => Some(err),
+            AppError::GameCoreError(err) => Some(err),
         }
     }
 }
@@ -46,9 +47,9 @@ impl From<std::io::Error> for AppError {
     }
 }
 
-impl From<CommandLoadError> for AppError {
-    fn from(err: CommandLoadError) -> Self {
-        AppError::CommandLoadError(err)
+impl From<GameCoreError> for AppError {
+    fn from(err: GameCoreError) -> Self {
+        AppError::GameCoreError(err)
     }
 }
 
@@ -62,13 +63,15 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> Self {
-        App {
-            ui: UI::new(),
-            game_core: GameCore::new(None),
-            input_buffer: String::new(),
-            exit: false,
-        }
+    pub fn new() -> Result<Self, AppError> {
+        Ok(
+            App {
+                ui: UI::new(),
+                game_core: GameCore::new(None, None)?,
+                input_buffer: String::new(),
+                exit: false,
+            }
+        )
     }
     
     pub fn run(&mut self) -> Result<(), AppError> {
