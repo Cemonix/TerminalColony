@@ -1,13 +1,18 @@
-pub mod command_handler;
-pub mod resources;
-pub mod building;
-pub mod planet;
-pub mod player;
 pub mod game_core;
 
-pub use command_handler::CommandHandler;
-pub use resources::ResourceType;
-pub use building::{Building, BuildingBase, BuildingDefinitionId, BuildingError, BuildingBehavior, ResourceGenerator, StorageProvider};
-pub use planet::Planet;
-pub use player::Player;
+mod command;
+mod resources;
+mod building;
+mod planet;
+mod player;
+
+// =================================================================================================
+
 pub use game_core::GameCore;
+pub use command::CommandLoadError;
+
+use command::{CommandRegistry, CommandError};
+use resources::ResourceType;
+use building::{Building, BuildingBase, BuildingDefinitionId, BuildingError, BuildingBehavior, ResourceGenerator, StorageProvider};
+use planet::Planet;
+use player::Player;
