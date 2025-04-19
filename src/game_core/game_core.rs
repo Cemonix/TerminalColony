@@ -1,7 +1,4 @@
-use crate::cli::read_and_parse_input;
-use crate::cli::{ CommandLoadError, CommandRegistry };
-
-use super::CommandHandler;
+use super::CommandRegistry;
 use super::Planet;
 use super::Player;
 
@@ -28,18 +25,22 @@ impl Turn {
 }
 
 pub struct GameCore {
+    command_registry: CommandRegistry,
     turn: Turn,
-    command_handler: CommandHandler,
     current_player: String,
     players: Vec<Player>,
     planets: Vec<Planet>,
 }
 
 impl GameCore {
-    pub fn new() -> Self {
+    pub fn new(command_registry_path: Option<&str>) -> Self {
+        let command_registry = match command_registry_path {
+            Some(path) => CommandRegistry::load(path).unwrap(),
+            None => CommandRegistry::load("data/commands.toml").unwrap(),
+        };
         GameCore {
+            command_registry,
             turn: Turn::new(0),
-            command_handler: CommandHandler {},
             current_player: String::new(),
             players: Vec::new(),
             planets: Vec::new(),
@@ -48,10 +49,6 @@ impl GameCore {
 
     pub fn get_turn(&self) -> &Turn {
         &self.turn
-    }
-
-    pub fn get_command_handler(&self) -> &CommandHandler {
-        &self.command_handler
     }
     
     pub fn add_player(&mut self, player: Player) {
