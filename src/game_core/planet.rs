@@ -2,8 +2,12 @@ use std::{collections::HashMap, fmt};
 use std::error::Error;
 
 use super::building::building::Building;
-use super::building::{BuildingError, BuildingType, BuildingTypeId};
-use super::resource::Resource;
+use super::{
+    BuildingTypeId,
+    BuildingType,
+    Resource,
+    BuildingError,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum PlanetError {
@@ -46,15 +50,15 @@ pub struct Planet {
 }
 
 impl Planet {
-    pub fn new(name: String, buildings: Option<HashMap<BuildingTypeId, BuildingType>>) -> Self {
+    pub fn new(name: &str, buildings: Option<HashMap<BuildingTypeId, BuildingType>>) -> Self {
         Self {
-            name,
+            name: name.to_string(),
             buildings: buildings.unwrap_or_else(HashMap::new),
         }
     }
 
     pub fn get_name(&self) -> &String {
-        &self.name
+        &self.name 
     }
 
     pub fn build(
@@ -73,6 +77,30 @@ impl Planet {
         }
 
         Ok(())
+    }
+
+    pub fn get_energy_amount(&self) -> Result<u32, PlanetError> {
+        self.get_resource_storage(Resource::Energy)
+            .map(|building| match building {
+                BuildingType::BatteryArray(storage) => storage.get_current_amount(),
+                _ => 0,
+            })
+    }
+
+    pub fn get_minerals_amount(&self) -> Result<u32, PlanetError> {
+        self.get_resource_storage(Resource::Minerals)
+            .map(|building| match building {
+                BuildingType::MineralStorage(storage) => storage.get_current_amount(),
+                _ => 0,
+            })
+    }
+
+    pub fn get_gas_amount(&self) -> Result<u32, PlanetError> {
+        self.get_resource_storage(Resource::Gas)
+            .map(|building| match building {
+                BuildingType::GasTank(storage) => storage.get_current_amount(),
+                _ => 0,
+            })
     }
 
     fn get_resource_storage(
@@ -107,24 +135,14 @@ impl Planet {
         minerals: u32,
         gas: u32,
     ) -> Result<(), PlanetError> {
-        match self.get_resource_storage(Resource::Energy)? {
-            BuildingType::BatteryArray(ref storage) if energy <= storage.get_current_amount() => {}
-            BuildingType::BatteryArray(_) => return Err(PlanetError::InsufficientResources),
-            _ => return Err(PlanetError::BuildingNotBuilt),
-        }
+        let energy_amount = self.get_energy_amount()?;
+        let minerals_amount = self.get_minerals_amount()?;
+        let gas_amount = self.get_gas_amount()?;
 
-        match self.get_resource_storage(Resource::Minerals)? {
-            BuildingType::MineralStorage(ref storage) if minerals <= storage.get_current_amount() => {}
-            BuildingType::MineralStorage(_) => return Err(PlanetError::InsufficientResources),
-            _ => return Err(PlanetError::BuildingNotBuilt),
+        if energy_amount >= energy && minerals_amount >= minerals && gas_amount >= gas {
+            Ok(())
+        } else {
+            Err(PlanetError::InsufficientResources)
         }
-
-        match self.get_resource_storage(Resource::Gas)? {
-            BuildingType::GasTank(ref storage) if gas <= storage.get_current_amount() => {}
-            BuildingType::GasTank(_) => return Err(PlanetError::InsufficientResources),
-            _ => return Err(PlanetError::BuildingNotBuilt),
-        }
-
-        Ok(())
     }
 }
