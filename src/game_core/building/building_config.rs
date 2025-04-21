@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs, path::Path};
 
 use serde::Deserialize;
 
-use crate::game_core::resource::Resource;
+use crate::game_core::Resource;
 
 #[derive(Debug)]
 pub enum BuildingsConfigError {
