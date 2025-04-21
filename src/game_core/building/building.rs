@@ -1,7 +1,7 @@
 use std::fmt;
 use std::error::Error;
 
-use crate::game_core::resource::Resource;
+use crate::game_core::Resource;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum BuildingError {
@@ -78,13 +78,13 @@ impl Building for BuildingType {
         match self {
             Self::CommandCenter(building)
             | Self::OrbitalShipyard(building)
-            | Self::ResearchLab(building) => &building.name,
+            | Self::ResearchLab(building) => &building.get_name(),
             Self::FusionReactor(productor)
             | Self::GasExtractor(productor)
-            | Self::MineralMine(productor) => &productor.building.name,
+            | Self::MineralMine(productor) => &productor.get_name(),
             Self::BatteryArray(storage)
             | Self::GasTank(storage)
-            | Self::MineralStorage(storage) => &storage.building.name,
+            | Self::MineralStorage(storage) => &storage.get_name(),
         }
     }
 
@@ -92,13 +92,13 @@ impl Building for BuildingType {
         match self {
             Self::CommandCenter(building)
             | Self::OrbitalShipyard(building)
-            | Self::ResearchLab(building) => building.level,
+            | Self::ResearchLab(building) => building.get_level(),
             Self::FusionReactor(productor)
             | Self::GasExtractor(productor)
-            | Self::MineralMine(productor) => productor.building.level,
+            | Self::MineralMine(productor) => productor.get_level(),
             Self::BatteryArray(storage)
             | Self::GasTank(storage)
-            | Self::MineralStorage(storage) => storage.building.level,
+            | Self::MineralStorage(storage) => storage.get_level(),
         }
     }
 
@@ -106,13 +106,13 @@ impl Building for BuildingType {
         match self {
             Self::CommandCenter(building)
             | Self::OrbitalShipyard(building)
-            | Self::ResearchLab(building) => building.max_level,
+            | Self::ResearchLab(building) => building.get_max_level(),
             Self::FusionReactor(productor)
             | Self::GasExtractor(productor)
-            | Self::MineralMine(productor) => productor.building.max_level,
+            | Self::MineralMine(productor) => productor.get_max_level(),
             Self::BatteryArray(storage)
             | Self::GasTank(storage)
-            | Self::MineralStorage(storage) => storage.building.max_level,
+            | Self::MineralStorage(storage) => storage.get_max_level(),
         }
     }
 
@@ -123,10 +123,10 @@ impl Building for BuildingType {
             | Self::ResearchLab(building) => building.upgrade(),
             Self::FusionReactor(productor)
             | Self::GasExtractor(productor)
-            | Self::MineralMine(productor) => productor.building.upgrade(),
+            | Self::MineralMine(productor) => productor.upgrade(),
             Self::BatteryArray(storage)
             | Self::GasTank(storage)
-            | Self::MineralStorage(storage) => storage.building.upgrade(),
+            | Self::MineralStorage(storage) => storage.upgrade(),
         }
     }
 }
@@ -139,6 +139,24 @@ pub struct BuildingBase {
 }
 
 impl BuildingBase {
+    pub fn new(name: String, level: u8, max_level: u8) -> Self {
+        BuildingBase { name, level, max_level }
+    }
+}
+
+impl Building for BuildingBase {
+    fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    fn get_level(&self) -> u8 {
+        self.level
+    }
+
+    fn get_max_level(&self) -> u8 {
+        self.max_level
+    }
+
     fn upgrade(&mut self) -> Result<(), BuildingError> {
         if self.level >= self.max_level {
             return Err(BuildingError::MaxLevelReached {
@@ -160,8 +178,30 @@ pub struct Productor {
 }
 
 impl Productor {
+    pub fn get_resource(&self) -> &Resource {
+        &self.resource
+    }
+
     pub fn get_production_rate(&self) -> u32 {
         self.production_rate
+    }
+}
+
+impl Building for Productor {
+    fn get_name(&self) -> &String {
+        &self.building.name
+    }
+
+    fn get_level(&self) -> u8 {
+        self.building.level
+    }
+
+    fn get_max_level(&self) -> u8 {
+        self.building.max_level
+    }
+
+    fn upgrade(&mut self) -> Result<(), BuildingError> {
+        self.building.upgrade()
     }
 }
 
@@ -180,5 +220,23 @@ impl Storage {
 
     pub fn get_current_amount(&self) -> u32 {
         self.current_amount
+    }
+}
+
+impl Building for Storage {
+    fn get_name(&self) -> &String {
+        &self.building.name
+    }
+
+    fn get_level(&self) -> u8 {
+        self.building.level
+    }
+
+    fn get_max_level(&self) -> u8 {
+        self.building.max_level
+    }
+
+    fn upgrade(&mut self) -> Result<(), BuildingError> {
+        self.building.upgrade()
     }
 }
