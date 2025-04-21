@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::{fmt, fs, io};
 use std::error::Error;
 use std::collections::HashMap;
@@ -136,7 +137,7 @@ pub struct CommandRegistry {
 }
 
 impl CommandRegistry {
-    pub fn load(config_path: &str) -> Result<Self, CommandLoadError> {
+    pub fn load(config_path: &Path) -> Result<Self, CommandLoadError> {
         let toml_content = fs::read_to_string(config_path)?;
         let config: CommandsConfig = toml::from_str(&toml_content)?;
 
