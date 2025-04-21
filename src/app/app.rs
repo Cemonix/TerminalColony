@@ -1,5 +1,5 @@
 use std::io::Stdout;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::error::Error;
 
 use ratatui::buffer::Buffer;
@@ -12,7 +12,7 @@ use ratatui::style::{Color, Style};
 use ratatui::widgets::Widget;
 use ratatui::{Frame, Terminal};
 
-use crate::game_core::game_core::GameCoreError;
+use crate::game_core::GameCoreError;
 use crate::game_core::GameCore;
 
 use super::ui::UI;
@@ -60,6 +60,7 @@ pub struct App {
     game_core: GameCore,
     input_buffer: String,
     exit: bool,
+    show_cursor: bool,
 }
 
 impl App {
@@ -70,6 +71,7 @@ impl App {
                 game_core: GameCore::new(None, None)?,
                 input_buffer: String::new(),
                 exit: false,
+                show_cursor: true,
             }
         )
     }
@@ -78,9 +80,17 @@ impl App {
         // Initialize terminal
         let mut terminal = Self::init_terminal()?;
 
+        let mut last_blink = Instant::now();
+        let blink_interval = Duration::from_millis(500);
+
         while !self.exit {
+            if last_blink.elapsed() >= blink_interval {
+                self.show_cursor = !self.show_cursor;
+                last_blink = Instant::now();
+            }
+
             terminal.draw(|f| {
-                self.ui.draw(f);
+                self.ui.draw(f, &self.input_buffer, self.show_cursor);
             })?;
 
             // TODO: Maybe poll will not be necessary, game is static most of the time
@@ -88,7 +98,7 @@ impl App {
                 if let Event::Key(key_event) = event::read()? {
                     // Only process key presses, not releases
                     if key_event.kind == KeyEventKind::Press {
-                        self.handle_key_event(key_event);
+                        self.handle_key_event(key_event)?;
                     }
                 }
                 // TODO: handle other events like Mouse or Resize here if needed
@@ -97,7 +107,6 @@ impl App {
 
         // Restore terminal
         Self::restore(&mut terminal)?;
-
         Ok(())
     }
 
@@ -121,13 +130,14 @@ impl App {
         Ok(())
     }
 
-    fn handle_key_event(&mut self, key_event: KeyEvent) {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<(), AppError> {
         match key_event.code {
             KeyCode::Esc => {
                 self.exit = true;
             }
             KeyCode::Enter => {
-                // TODO: Process the command
+                self.game_core.execute_command(&self.input_buffer)?;
+                self.input_buffer.clear();
             }
             KeyCode::Char(c) => {
                 self.input_buffer.push(c);
@@ -138,5 +148,7 @@ impl App {
             // TODO: Handle other keys like arrow keys for history, Home/End, Delete if needed
             _ => {}
         }
+
+        Ok(())
     }
 }
