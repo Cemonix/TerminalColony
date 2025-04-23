@@ -9,12 +9,12 @@ mod player;
 
 // =================================================================================================
 
-pub use game_core::GameCore;
-pub use game_core::GameCoreError;
+pub use game_core::{GameCore, GameCoreError};
 pub use command::CommandLoadError;
+pub use planet::PlanetStatus;
+pub use resource::Resource;
 
 use command::{CommandRegistry, CommandError};
-use resource::Resource;
 use turn::Turn;
 use building::{
     BuildingsConfig,
