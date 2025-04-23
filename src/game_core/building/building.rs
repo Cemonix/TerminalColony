@@ -3,8 +3,11 @@ use std::error::Error;
 
 use crate::game_core::Resource;
 
+use super::BuildingConfig;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum BuildingError {
+    WrongBuildingConfiguration,
     MaxLevelReached { current: u8, max: u8 },
     InsufficientResources { required: u32, available: u32 },
 }
@@ -12,6 +15,8 @@ pub enum BuildingError {
 impl fmt::Display for BuildingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            BuildingError::WrongBuildingConfiguration => 
+                write!(f, "Wrong building configuration"),
             BuildingError::MaxLevelReached { current, max } => 
                 write!(f, "Cannot upgrade: level {current} is at max {max}"),
             BuildingError::InsufficientResources { required, available } => 
@@ -25,13 +30,12 @@ impl Error for BuildingError {}
 // =================================================================================================
 
 pub trait Building {
-    fn get_name(&self) -> &String;
+    fn get_name(&self) -> &str;
     fn get_level(&self) -> u8;
-    fn get_max_level(&self) -> u8;
     fn upgrade(&mut self) -> Result<(), BuildingError>;
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum BuildingTypeId {
     CommandCenter,
     OrbitalShipyard,
@@ -42,6 +46,22 @@ pub enum BuildingTypeId {
     BatteryArray,
     GasTank,
     MineralStorage,
+}
+
+impl fmt::Display for BuildingTypeId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::CommandCenter => write!(f, "Command Center"),
+            Self::OrbitalShipyard => write!(f, "Orbital Shipyard"),
+            Self::ResearchLab => write!(f, "Research Lab"),
+            Self::FusionReactor => write!(f, "Fusion Reactor"),
+            Self::GasExtractor => write!(f, "Gas Extractor"),
+            Self::MineralMine => write!(f, "Mineral Mine"),
+            Self::BatteryArray => write!(f, "Battery Array"),
+            Self::GasTank => write!(f, "Gas Tank"),
+            Self::MineralStorage => write!(f, "Mineral Storage"),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -74,7 +94,7 @@ impl BuildingType {
 }
 
 impl Building for BuildingType {
-    fn get_name(&self) -> &String {
+    fn get_name(&self) -> &str {
         match self {
             Self::CommandCenter(building)
             | Self::OrbitalShipyard(building)
@@ -102,20 +122,6 @@ impl Building for BuildingType {
         }
     }
 
-    fn get_max_level(&self) -> u8 {
-        match self {
-            Self::CommandCenter(building)
-            | Self::OrbitalShipyard(building)
-            | Self::ResearchLab(building) => building.get_max_level(),
-            Self::FusionReactor(productor)
-            | Self::GasExtractor(productor)
-            | Self::MineralMine(productor) => productor.get_max_level(),
-            Self::BatteryArray(storage)
-            | Self::GasTank(storage)
-            | Self::MineralStorage(storage) => storage.get_max_level(),
-        }
-    }
-
     fn upgrade(&mut self) -> Result<(), BuildingError> {
         match self {
             Self::CommandCenter(building)
@@ -135,17 +141,17 @@ impl Building for BuildingType {
 pub struct BuildingBase {
     name: String,
     level: u8,
-    max_level: u8,
+    building_config: BuildingConfig,
 }
 
 impl BuildingBase {
-    pub fn new(name: String, level: u8, max_level: u8) -> Self {
-        BuildingBase { name, level, max_level }
+    pub fn new(name: &str, level: u8, building_config: BuildingConfig) -> Self {
+        BuildingBase { name: name.to_string(), level, building_config }
     }
 }
 
 impl Building for BuildingBase {
-    fn get_name(&self) -> &String {
+    fn get_name(&self) -> &str {
         &self.name
     }
 
@@ -153,15 +159,13 @@ impl Building for BuildingBase {
         self.level
     }
 
-    fn get_max_level(&self) -> u8 {
-        self.max_level
-    }
-
     fn upgrade(&mut self) -> Result<(), BuildingError> {
-        if self.level >= self.max_level {
+        let max_level = self.building_config.get_max_level();
+
+        if self.level >= max_level {
             return Err(BuildingError::MaxLevelReached {
                 current: self.level,
-                max: self.max_level,
+                max: max_level,
             });
         }
         
@@ -188,7 +192,7 @@ impl Productor {
 }
 
 impl Building for Productor {
-    fn get_name(&self) -> &String {
+    fn get_name(&self) -> &str {
         &self.building.name
     }
 
@@ -196,12 +200,25 @@ impl Building for Productor {
         self.building.level
     }
 
-    fn get_max_level(&self) -> u8 {
-        self.building.max_level
-    }
-
     fn upgrade(&mut self) -> Result<(), BuildingError> {
-        self.building.upgrade()
+        self.building.upgrade();
+
+        match &self.building.building_config.get_production() {
+            Some(production) => {
+                match production.get_rate_for_level(self.building.level as usize) {
+                    Some(rate) => {
+                        self.production_rate = rate as u32;
+                    }
+                    None => {
+                        return Err(BuildingError::WrongBuildingConfiguration);
+                    }
+                }
+                Ok(())
+            }
+            None => {
+                return Err(BuildingError::WrongBuildingConfiguration);
+            }
+        }
     }
 }
 
@@ -224,7 +241,7 @@ impl Storage {
 }
 
 impl Building for Storage {
-    fn get_name(&self) -> &String {
+    fn get_name(&self) -> &str {
         &self.building.name
     }
 
@@ -232,11 +249,24 @@ impl Building for Storage {
         self.building.level
     }
 
-    fn get_max_level(&self) -> u8 {
-        self.building.max_level
-    }
-
     fn upgrade(&mut self) -> Result<(), BuildingError> {
-        self.building.upgrade()
+        self.building.upgrade();
+
+        match &self.building.building_config.get_storage() {
+            Some(storage) => {
+                match storage.get_capacity_for_level(self.building.level as usize) {
+                    Some(capacity) => {
+                        self.capacity = capacity as u32;
+                    }
+                    None => {
+                        return Err(BuildingError::WrongBuildingConfiguration);
+                    }
+                }
+                Ok(())
+            }
+            None => {
+                return Err(BuildingError::WrongBuildingConfiguration);
+            }
+        }
     }
 }
