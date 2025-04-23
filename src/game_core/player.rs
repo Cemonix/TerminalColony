@@ -14,12 +14,12 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(name: String, building_config: BuildingConfig) -> Self {
+    pub fn new(name: &str, planet_name: &str, building_config: BuildingConfig) -> Self {
         let command_center = BuildingType::CommandCenter(
             BuildingBase::new(
-                building_config.name,
+                building_config.clone().get_name(),
                 1,
-                building_config.max_level,
+                building_config,
             )
         );
     
@@ -27,8 +27,8 @@ impl Player {
         buildings.insert(BuildingTypeId::CommandCenter, command_center);
     
         Player {
-            name,
-            planets: vec![Planet::new("Earth", Some(buildings))],
+            name: name.to_string(),
+            planets: vec![Planet::new(planet_name, Some(buildings))],
         }
     }
 
@@ -36,7 +36,7 @@ impl Player {
         &self.name
     }
 
-    pub fn set_name(&mut self, name: String) {
-        self.name = name;
+    pub fn get_planets(&self) -> &[Planet] {
+        &self.planets
     }
 }
