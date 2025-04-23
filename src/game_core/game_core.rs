@@ -3,15 +3,7 @@ use std::fmt::Display;
 use std::path::Path;
 
 use super::{
-    Turn,
-    PlanetError,
-    BuildingsConfig,
-    BuildingsConfigError,
-    Player,
-    Planet,
-    CommandRegistry,
-    CommandLoadError,
-    CommandError,
+    planet::PlanetStatus, BuildingsConfig, BuildingsConfigError, CommandError, CommandLoadError, CommandRegistry, Planet, PlanetError, Player, Turn
 };
 
 #[derive(Debug)]
@@ -74,9 +66,8 @@ pub struct GameCore {
     command_registry: CommandRegistry,
     buildings_config: BuildingsConfig,
     turn: Turn,
-    current_player: String,
-    players: Vec<Player>,
-    planets: Vec<Planet>,
+    current_player: usize,
+    players: Vec<Player>
 }
 
 impl GameCore {
@@ -94,17 +85,48 @@ impl GameCore {
             None => BuildingsConfig::load(Path::new("data/buildings.toml"))?,
         };
 
+        // TODO: Number of players created should be set by the user via ui
+        let command_center = buildings_config.buildings["CommandCenter"].clone();
+        let player1 = Player::new(
+            "Player 1", 
+            "Planet 1", 
+            command_center
+        );
+
         Ok(
             GameCore {
                 command_registry,
                 buildings_config,
                 turn: Turn::new(0),
-                current_player: String::new(),
-                players: Vec::new(),
-                planets: Vec::new(),
+                current_player: 0,
+                players: vec![player1],
             }
         )
     }
+
+    pub fn get_current_player_name(&self) -> String { // Renamed for clarity
+        self.players
+            .get(self.current_player)
+            .map(|p| p.get_name().to_string())
+            .unwrap_or_else(|| "Unknown Player".to_string())
+    }
+
+    pub fn get_current_player_planet_status(&self, planet_index: usize) -> Option<PlanetStatus> {
+        self.players.get(self.current_player).and_then(|player| {
+            let planets = player.get_planets();
+            let total_planet_count = planets.len();
+            planets
+                .get(planet_index)
+                .map(|planet| planet.get_status(total_planet_count))
+        })
+    }
+
+    pub fn get_planet_count(&self) -> usize {
+        self.players
+           .get(self.current_player)
+           .map(|player| player.get_planets().len())
+           .unwrap_or(0)
+   }
     
     pub fn add_player(&mut self, player: Player) {
         self.players.push(player);
@@ -119,7 +141,6 @@ impl GameCore {
         command: &str,
     ) -> Result<(), GameCoreError> {
         let command = self.command_registry.parse(command)?;
-        print!("Executing command: {:?}", command);
         // TODO: Figure out how to handle the command execution
         Ok(())
     }
