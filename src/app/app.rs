@@ -55,12 +55,21 @@ impl From<GameCoreError> for AppError {
 
 // =================================================================================================
 
+#[derive(PartialEq, Eq)]
+pub enum FocusedPane {
+    Status,
+    CommandInput,
+    // Potentially add Log later if needed
+}
+
 pub struct App {
     ui: UI,
     game_core: GameCore,
     input_buffer: String,
     exit: bool,
     show_cursor: bool,
+    focused_pane: FocusedPane,
+    current_planet_index: usize,
 }
 
 impl App {
@@ -72,6 +81,8 @@ impl App {
                 input_buffer: String::new(),
                 exit: false,
                 show_cursor: true,
+                focused_pane: FocusedPane::CommandInput,
+                current_planet_index: 0,
             }
         )
     }
@@ -89,8 +100,24 @@ impl App {
                 last_blink = Instant::now();
             }
 
+            let player_name = self.game_core.get_current_player_name();
+            let planet_status = self
+                .game_core
+                .get_current_player_planet_status(self.current_planet_index);
+
+            let command_focused = self.focused_pane == FocusedPane::CommandInput;
+            let status_focused = self.focused_pane == FocusedPane::Status;
+
             terminal.draw(|f| {
-                self.ui.draw(f, &self.input_buffer, self.show_cursor);
+                self.ui.draw(
+                    f,
+                    &self.input_buffer,
+                    self.show_cursor && command_focused,
+                    command_focused,
+                    status_focused,
+                    &player_name,
+                    planet_status.as_ref(),
+                );
             })?;
 
             // TODO: Maybe poll will not be necessary, game is static most of the time
@@ -132,20 +159,35 @@ impl App {
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<(), AppError> {
         match key_event.code {
+            KeyCode::Up => {
+                if self.focused_pane == FocusedPane::CommandInput {
+                   self.focused_pane = FocusedPane::Status;
+                }
+           }
+           KeyCode::Down => {
+                if self.focused_pane == FocusedPane::Status {
+                    self.focused_pane = FocusedPane::CommandInput;
+                }
+           }
             KeyCode::Esc => {
                 self.exit = true;
             }
             KeyCode::Enter => {
-                self.game_core.execute_command(&self.input_buffer)?;
-                self.input_buffer.clear();
+                if self.focused_pane == FocusedPane::CommandInput {
+                    self.game_core.execute_command(&self.input_buffer)?;
+                    self.input_buffer.clear();
+                }
             }
             KeyCode::Char(c) => {
-                self.input_buffer.push(c);
+                if self.focused_pane == FocusedPane::CommandInput {
+                    self.input_buffer.push(c);
+                }
             }
             KeyCode::Backspace => {
-                self.input_buffer.pop();
+                if self.focused_pane == FocusedPane::CommandInput && !self.input_buffer.is_empty() {
+                    self.input_buffer.pop();
+                }
             }
-            // TODO: Handle other keys like arrow keys for history, Home/End, Delete if needed
             _ => {}
         }
 
