@@ -77,41 +77,83 @@ pub struct BuildingsConfig {
     pub buildings: HashMap<String, BuildingConfig>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct BuildingConfig {
-    pub name: String,
-    pub max_level: u8,
-    pub upgrade_cost: UpgradeCost,
+    name: String,
+    max_level: u8,
+    upgrade_cost: UpgradeCost,
     #[serde(default)]
-    pub production: Option<ProductionInfo>,
+    production: Option<ProductionInfo>,
     #[serde(default)]
-    pub storage: Option<StorageInfo>,
+    storage: Option<StorageInfo>,
 }
 
-#[derive(Deserialize, Debug)]
+impl BuildingConfig {
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_max_level(&self) -> u8 {
+        self.max_level
+    }
+
+    pub fn get_upgrade_cost(&self) -> &UpgradeCost {
+        &self.upgrade_cost
+    }
+
+    pub fn get_production(&self) -> Option<&ProductionInfo> {
+        self.production.as_ref()
+    }
+
+    pub fn get_storage(&self) -> Option<&StorageInfo> {
+        self.storage.as_ref()
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct UpgradeCost {
     #[serde(default)]
-    pub energy: Vec<u64>,
+    pub energy: Vec<u32>,
     #[serde(default)]
-    pub minerals: Vec<u64>,
+    pub minerals: Vec<u32>,
     #[serde(default)]
-    pub gas: Vec<u64>,
+    pub gas: Vec<u32>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ProductionInfo {
     pub resource: Resource,
-    pub rate_per_level: Vec<u64>,
+    pub rate_per_level: Vec<u32>,
 }
 
-#[derive(Deserialize, Debug)]
+impl ProductionInfo {
+    pub fn get_resource(&self) -> &Resource {
+        &self.resource
+    }
+
+    pub fn get_rate_for_level(&self, level: usize) -> Option<u32> {
+        self.rate_per_level.get(level).cloned()
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct StorageInfo {
     pub resource: Resource,
-    pub capacity_per_level: Vec<u64>,
+    pub capacity_per_level: Vec<u32>,
+}
+
+impl StorageInfo {
+    pub fn get_resource(&self) -> &Resource {
+        &self.resource
+    }
+
+    pub fn get_capacity_for_level(&self, level: usize) -> Option<u32> {
+        self.capacity_per_level.get(level).cloned()
+    }
 }
 
 impl BuildingsConfig {
