@@ -13,6 +13,7 @@ pub enum BuildingsConfigError {
     GasCostMismatch(String),
     ProductionRateMismatch(String),
     StorageCapacityMismatch(String),
+    BuildingTimeMismatch(String),
 }
 
 impl std::fmt::Display for BuildingsConfigError {
@@ -39,6 +40,9 @@ impl std::fmt::Display for BuildingsConfigError {
             BuildingsConfigError::StorageCapacityMismatch(err) => write!(
                 f, "Storage capacity mismatch: {} doesn't match max_level", err
             ),
+            BuildingsConfigError::BuildingTimeMismatch(err) => write!(
+                f, "Building time mismatch: {} doesn't match max_level", err
+            ),
         }
     }
 }
@@ -53,6 +57,7 @@ impl std::error::Error for BuildingsConfigError {
             BuildingsConfigError::GasCostMismatch(_) => None,
             BuildingsConfigError::ProductionRateMismatch(_) => None,
             BuildingsConfigError::StorageCapacityMismatch(_) => None,
+            BuildingsConfigError::BuildingTimeMismatch(_) => None,
         }
     }
 }
@@ -83,6 +88,7 @@ pub struct BuildingConfig {
     name: String,
     max_level: u8,
     upgrade_cost: UpgradeCost,
+    building_time: BuildingTime,
     #[serde(default)]
     production: Option<ProductionInfo>,
     #[serde(default)]
@@ -120,6 +126,12 @@ pub struct UpgradeCost {
     pub minerals: Vec<u32>,
     #[serde(default)]
     pub gas: Vec<u32>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct BuildingTime {
+    pub time: Vec<u32>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -207,6 +219,15 @@ impl BuildingsConfig {
                         )
                     );
                 }
+            }
+
+            // Validate building time
+            if config.building_time.time.len() != max_lvl {
+                return Err(
+                    BuildingsConfigError::BuildingTimeMismatch(
+                        config.building_time.time.len().to_string()
+                    )
+                );
             }
         }
     
