@@ -14,7 +14,7 @@ pub use command::CommandLoadError;
 pub use planet::PlanetStatus;
 pub use resource::Resource;
 
-use command::{CommandRegistry, CommandError};
+use command::{CommandRegistry, CommandExecution, CommandError};
 use turn::Turn;
 use building::{
     BuildingsConfig,
