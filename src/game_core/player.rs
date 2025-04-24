@@ -10,7 +10,7 @@ use super::{
 
 pub struct Player {
     name: String,
-    planets: Vec<Planet>,
+    planets: HashMap<String, Planet>,
 }
 
 impl Player {
@@ -28,7 +28,12 @@ impl Player {
     
         Player {
             name: name.to_string(),
-            planets: vec![Planet::new(planet_name, Some(buildings))],
+            planets: HashMap::from([
+                (
+                    planet_name.to_string(),
+                    Planet::new(planet_name, Some(buildings)),
+                ),
+            ]),
         }
     }
 
@@ -36,7 +41,11 @@ impl Player {
         &self.name
     }
 
-    pub fn get_planets(&self) -> &[Planet] {
-        &self.planets
+    pub fn get_planets_count(&self) -> usize {
+        self.planets.len()
+    }
+
+    pub fn get_planet(&self, planet_name: &str) -> Option<&Planet> {
+        self.planets.get(planet_name)
     }
 }
