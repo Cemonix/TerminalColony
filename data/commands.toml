@@ -24,14 +24,8 @@ description = "Ends your current turn."
 expected_args = 0
 
 [[commands]]
-name = "status"
-aliases = ["st", "info"]
-description = "Shows the current game status."
-expected_args = 0
-
-[[commands]]
 name = "build"
 description = "Builds a structure at a specified planet."
 expected_args = 2
-arg_hints = ["structure_type", "coordinates"]
+arg_hints = ["structure_type", "planet_name"]
 
