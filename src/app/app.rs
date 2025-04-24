@@ -69,7 +69,7 @@ pub struct App {
     exit: bool,
     show_cursor: bool,
     focused_pane: FocusedPane,
-    current_planet_index: usize,
+    current_planet_name: String,
 }
 
 impl App {
@@ -82,7 +82,7 @@ impl App {
                 exit: false,
                 show_cursor: true,
                 focused_pane: FocusedPane::CommandInput,
-                current_planet_index: 0,
+                current_planet_name: String::new(),
             }
         )
     }
@@ -103,7 +103,7 @@ impl App {
             let player_name = self.game_core.get_current_player_name();
             let planet_status = self
                 .game_core
-                .get_current_player_planet_status(self.current_planet_index);
+                .get_current_player_planet_status(self.current_planet_name.as_str()); // TODO: planet name is empty, fix this
 
             let command_focused = self.focused_pane == FocusedPane::CommandInput;
             let status_focused = self.focused_pane == FocusedPane::Status;
