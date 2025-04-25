@@ -151,7 +151,7 @@ impl GameCore {
     pub fn execute_command(
         &mut self,
         command: &str,
-    ) -> Result<(), GameCoreError> {
+    ) -> Result<Option<String>, GameCoreError> {
         let command = CommandExecution::parse(&self.command_registry, command)?;
         
         match command {
@@ -190,34 +190,44 @@ impl GameCore {
                             )
                         )
                     )
-               })?;
+                })?;
 
-               planet.build(target_building_id, building_config)?;
+                planet.build(target_building_id, building_config)?;
 
-               // TODO: Deduct resources from the planet AFTER successful build/upgrade call
-               // This part is complex as it needs access to upgrade costs based on the *next* level
-               // and mutable access to storage buildings. Needs further implementation.
+                // TODO: Deduct resources from the planet AFTER successful build/upgrade call
+                // This part is complex as it needs access to upgrade costs based on the *next* level
+                // and mutable access to storage buildings. Needs further implementation.
 
-               // TODO: Log success or return Ok
-           }
+                Ok(Some(format!("Build command successful for {} on {}.",
+                    build_command.get_building(),
+                    build_command.get_planet()
+                )))
+            }
             CommandExecution::EndTurn(_end_turn_command) => { //
                 let player = self.players.get_mut(&self.current_player).ok_or_else(|| {
                     GameCoreError::CommandError(CommandError::new("Current player not found."))
                 })?;
 
                 player.process_turn_end()?;
+
+                let turn_number = self.turn.get_turn_number();
                 self.turn.next_turn();
 
                 // TODO: Handle switching to the next player if multiple players exist
-             }
+
+                Ok(Some(format!("Turn {} ended.", turn_number)))
+            }
             CommandExecution::Quit(_) => {
                 self.is_running = false;
+                Ok(Some("Quit command recognized.".to_string()))
             }
-            _ => {
-                return Err(GameCoreError::CommandError(CommandError::new("Unknown command.")));
+            CommandExecution::Help(_) => {
+                // TODO: Implement help command
+                Ok(Some("Help command recognized.".to_string()))
+            }
+            CommandExecution::UnknownInternal(_) => {
+                Err(GameCoreError::CommandError(CommandError::new("Parsed command is unknown internally.")))
             }
         }
-
-       Ok(())
     }
 }
