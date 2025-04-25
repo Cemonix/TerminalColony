@@ -1,6 +1,5 @@
 use ratatui::{
     widgets::{Block, Borders, Paragraph, List, ListItem},
-    buffer::Buffer,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     Frame,
     text::{Line, Span, Text},
@@ -8,6 +7,8 @@ use ratatui::{
 };
 
 use crate::game_core::{PlanetStatus, Resource};
+
+use super::log::{LogLevel, LogMessage};
 
 pub struct UI {}
 
@@ -26,6 +27,7 @@ impl UI {
         current_turn: u32,
         player_name: &str,
         planet_status: Option<&PlanetStatus>,
+        logs: &[LogMessage],
     ) {
         let main_layout = Layout::default()
             .direction(Direction::Vertical)
@@ -63,7 +65,7 @@ impl UI {
         );
 
         // 2. Message Log (Top-Left)
-        self.render_log(frame, top_layout[1], "Message Log Placeholder");
+        self.render_log(frame, top_layout[1], logs);
 
         // 4. Command Input (Bottom)
         self.render_command_input(
@@ -180,11 +182,28 @@ impl UI {
         frame.render_widget(status_block, area);
     }
 
-    // TODO: WIP, replace with actual message log
-    fn render_log(&self, frame: &mut Frame, area: Rect, log: &str) {
+    fn render_log(&self, frame: &mut Frame, area: Rect, logs: &[LogMessage]) {
         let log_block = Block::default().title("Log").borders(Borders::ALL);
-        let log_paragraph = Paragraph::new(Text::raw(log)).block(log_block);
-        frame.render_widget(log_paragraph, area);
+
+        let log_items: Vec<ListItem> = logs
+            .iter()
+            .rev() // Display newest logs first
+            .map(|log| {
+                let style = match log.level {
+                    LogLevel::Info => Style::default().fg(Color::White),
+                    LogLevel::Error => Style::default().fg(Color::Red),
+                    LogLevel::Success => Style::default().fg(Color::Green),
+                };
+                let line = Line::from(Span::styled(log.text.clone(), style));
+                ListItem::new(line)
+            })
+            .collect();
+
+        let log_list = List::new(log_items).block(log_block)
+            .highlight_style(Style::default().bg(Color::Gray))
+            .highlight_symbol(">> ");
+
+        frame.render_widget(log_list, area);
     }
 
     fn render_command_input(
