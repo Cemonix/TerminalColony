@@ -69,7 +69,7 @@ pub struct App {
     exit: bool,
     show_cursor: bool,
     focused_pane: FocusedPane,
-    current_planet_name: String,
+    current_planet_idx: usize,
 }
 
 impl App {
@@ -82,7 +82,7 @@ impl App {
                 exit: false,
                 show_cursor: true,
                 focused_pane: FocusedPane::CommandInput,
-                current_planet_name: String::new(),
+                current_planet_idx: 0,
             }
         )
     }
@@ -95,15 +95,29 @@ impl App {
         let blink_interval = Duration::from_millis(500);
 
         while !self.exit {
+            if !self.game_core.is_running() {
+                self.exit = true;
+                break;
+            }
+
             if last_blink.elapsed() >= blink_interval {
                 self.show_cursor = !self.show_cursor;
                 last_blink = Instant::now();
             }
 
+            let current_turn = self.game_core.get_current_turn();
+
             let player_name = self.game_core.get_current_player_name();
+
+            let planet_names = self.game_core.get_current_player_planet_names();
+            if self.current_planet_idx >= planet_names.len() {
+                self.current_planet_idx = 0;
+            }
+            let planet_name = &planet_names[self.current_planet_idx];
             let planet_status = self
                 .game_core
-                .get_current_player_planet_status(self.current_planet_name.as_str()); // TODO: planet name is empty, fix this
+                .get_current_player_planet_status(planet_name);
+
 
             let command_focused = self.focused_pane == FocusedPane::CommandInput;
             let status_focused = self.focused_pane == FocusedPane::Status;
@@ -115,6 +129,7 @@ impl App {
                     self.show_cursor && command_focused,
                     command_focused,
                     status_focused,
+                    current_turn,
                     &player_name,
                     planet_status.as_ref(),
                 );
@@ -163,12 +178,31 @@ impl App {
                 if self.focused_pane == FocusedPane::CommandInput {
                    self.focused_pane = FocusedPane::Status;
                 }
-           }
-           KeyCode::Down => {
+            }
+            KeyCode::Down => {
                 if self.focused_pane == FocusedPane::Status {
                     self.focused_pane = FocusedPane::CommandInput;
                 }
-           }
+            }
+            KeyCode::Left => {
+                if self.focused_pane == FocusedPane::Status {
+                    self.current_planet_idx = (self.current_planet_idx + 1) % self.game_core.get_planet_count();
+                }
+            }
+            KeyCode::Right => {
+                if self.focused_pane == FocusedPane::Status {
+                    self.current_planet_idx = (
+                        self.current_planet_idx + self.game_core.get_planet_count() - 1
+                    ) % self.game_core.get_planet_count();
+                }
+            }
+            KeyCode::Tab => {
+                if self.focused_pane == FocusedPane::CommandInput {
+                    self.focused_pane = FocusedPane::Status;
+                } else {
+                    self.focused_pane = FocusedPane::CommandInput;
+                }
+            }
             KeyCode::Esc => {
                 self.exit = true;
             }
