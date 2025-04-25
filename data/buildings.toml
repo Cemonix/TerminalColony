@@ -5,6 +5,7 @@ max_level = 5
 [CommandCenter.upgrade_cost]
 energy = [100, 200, 300, 400, 500]
 minerals = [50, 100, 150, 200, 250]
+gas = [0, 0, 0, 0, 0]
 
 [CommandCenter.building_time]
 time_per_level = [1, 2, 3, 4, 5]
@@ -16,6 +17,7 @@ max_level = 10
 [FusionReactor.upgrade_cost]
 energy = [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
 minerals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+gas = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 [FusionReactor.building_time]
 time_per_level = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -31,6 +33,7 @@ max_level = 15
 [BatteryArray.upgrade_cost]
 energy = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000]
 minerals = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]
+gas = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 [BatteryArray.building_time]
 time_per_level = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
@@ -46,6 +49,7 @@ max_level = 10
 [GasExtractor.upgrade_cost]
 energy = [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
 minerals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+gas = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 [GasExtractor.building_time]
 time_per_level = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -61,6 +65,7 @@ max_level = 15
 [GasTank.upgrade_cost]
 energy = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000]
 minerals = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]
+gas = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 [GasTank.building_time]
 time_per_level = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
@@ -76,6 +81,7 @@ max_level = 10
 [MineralMine.upgrade_cost]
 energy = [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
 minerals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+gas = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 [MineralMine.building_time]
 time_per_level = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -91,6 +97,7 @@ max_level = 15
 [MineralSilo.upgrade_cost]
 energy = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000]
 minerals = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]
+gas = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 [MineralSilo.building_time]
 time_per_level = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
@@ -106,6 +113,7 @@ max_level = 5
 [OrbitalShipyard.upgrade_cost]
 energy = [100, 200, 300, 400, 500]
 minerals = [50, 100, 150, 200, 250]
+gas = [0, 0, 0, 0, 0]
 
 [OrbitalShipyard.building_time]
 time_per_level = [1, 2, 3, 4, 5]
@@ -117,6 +125,7 @@ max_level = 5
 [ResearchLab.upgrade_cost]
 energy = [100, 200, 300, 400, 500]
 minerals = [50, 100, 150, 200, 250]
+gas = [0, 0, 0, 0, 0]
 
 [ResearchLab.building_time]
 time_per_level = [1, 2, 3, 4, 5]
