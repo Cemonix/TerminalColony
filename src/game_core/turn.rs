@@ -16,6 +16,6 @@ impl Turn {
     }
 
     pub fn reset_turn(&mut self) {
-        self.turn_number = 0;
+        self.turn_number = 1;
     }
 }
