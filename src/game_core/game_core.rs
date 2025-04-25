@@ -218,6 +218,6 @@ impl GameCore {
             }
         }
 
-        Ok(())
+       Ok(())
     }
 }
