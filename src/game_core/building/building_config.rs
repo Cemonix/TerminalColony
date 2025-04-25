@@ -8,6 +8,7 @@ use crate::game_core::Resource;
 pub enum BuildingsConfigError {
     Io(std::io::Error),
     Toml(toml::de::Error),
+    BuildingNotFound(String),
     EnergyCostMismatch(String),
     MineralsCostMismatch(String),
     GasCostMismatch(String),
@@ -24,6 +25,9 @@ impl std::fmt::Display for BuildingsConfigError {
             ),
             BuildingsConfigError::Toml(err) => write!(
                 f, "Failed to parse buildings configuration file (TOML): {}", err
+            ),
+            BuildingsConfigError::BuildingNotFound(name) => write!(
+                f, "Building not found in configuration: {}", name
             ),
             BuildingsConfigError::EnergyCostMismatch(err) => write!(
                 f, "Energy cost mismatch: {} doesn't match max_level", err
@@ -52,6 +56,7 @@ impl std::error::Error for BuildingsConfigError {
         match self {
             BuildingsConfigError::Io(err) => Some(err),
             BuildingsConfigError::Toml(err) => Some(err),
+            BuildingsConfigError::BuildingNotFound(_) => None,
             BuildingsConfigError::EnergyCostMismatch(_) => None,
             BuildingsConfigError::MineralsCostMismatch(_) => None,
             BuildingsConfigError::GasCostMismatch(_) => None,
@@ -131,7 +136,7 @@ pub struct UpgradeCost {
 #[derive(Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct BuildingTime {
-    pub time: Vec<u32>,
+    pub time_per_level: Vec<u32>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -222,10 +227,10 @@ impl BuildingsConfig {
             }
 
             // Validate building time
-            if config.building_time.time.len() != max_lvl {
+            if config.building_time.time_per_level.len() != max_lvl {
                 return Err(
                     BuildingsConfigError::BuildingTimeMismatch(
-                        config.building_time.time.len().to_string()
+                        config.building_time.time_per_level.len().to_string()
                     )
                 );
             }
