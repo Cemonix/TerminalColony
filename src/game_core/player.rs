@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
 use super::{
-    BuildingTypeId,
-    BuildingType,
-    BuildingBase,
-    BuildingConfig,
-    Planet,
+    building::BuildingsConfig, planet::PlanetError, BuildingBase, BuildingConfig, BuildingType, BuildingTypeId, Planet
 };
 
 pub struct Player {
@@ -14,24 +10,15 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(name: &str, planet_name: &str, building_config: BuildingConfig) -> Self {
-        let command_center = BuildingType::CommandCenter(
-            BuildingBase::new(
-                building_config.clone().get_name(),
-                1,
-                building_config,
-            )
-        );
-    
-        let mut buildings = HashMap::new();
-        buildings.insert(BuildingTypeId::CommandCenter, command_center);
-    
+    pub fn new(name: &str, planet_name: &str, buildings_config: &BuildingsConfig) -> Self {
+        let planet = Planet::new(planet_name, buildings_config).unwrap(); // TODO: Handle error
+
         Player {
             name: name.to_string(),
             planets: HashMap::from([
                 (
                     planet_name.to_string(),
-                    Planet::new(planet_name, Some(buildings)),
+                    planet,
                 ),
             ]),
         }
@@ -45,7 +32,22 @@ impl Player {
         self.planets.len()
     }
 
+    pub fn get_planet_names(&self) -> Vec<String> {
+        self.planets.keys().cloned().collect()
+    }
+
+    pub fn process_turn_end(&mut self) -> Result<(), PlanetError> {
+        for planet in self.planets.values_mut() {
+            planet.generate_resources()?;
+        }
+        Ok(())
+    }
+    
     pub fn get_planet(&self, planet_name: &str) -> Option<&Planet> {
         self.planets.get(planet_name)
+    }
+
+    pub fn get_mut_planet(&mut self, planet_name: &str) -> Option<&mut Planet> {
+        self.planets.get_mut(planet_name)
     }
 }
