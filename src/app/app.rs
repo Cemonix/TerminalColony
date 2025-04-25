@@ -15,6 +15,7 @@ use ratatui::{Frame, Terminal};
 use crate::game_core::GameCoreError;
 use crate::game_core::GameCore;
 
+use super::log::LogMessage;
 use super::ui::UI;
 
 #[derive(Debug)]
@@ -70,6 +71,7 @@ pub struct App {
     show_cursor: bool,
     focused_pane: FocusedPane,
     current_planet_idx: usize,
+    logs: Vec<LogMessage>,
 }
 
 impl App {
@@ -83,6 +85,7 @@ impl App {
                 show_cursor: true,
                 focused_pane: FocusedPane::CommandInput,
                 current_planet_idx: 0,
+                logs: Vec::new(),
             }
         )
     }
@@ -132,6 +135,7 @@ impl App {
                     current_turn,
                     &player_name,
                     planet_status.as_ref(),
+                    &self.logs
                 );
             })?;
 
@@ -172,6 +176,14 @@ impl App {
         Ok(())
     }
 
+    fn add_log(&mut self, message: LogMessage) {
+        const MAX_LOGS: usize = 100; // TODO: Make this configurable
+        if self.logs.len() >= MAX_LOGS {
+            self.logs.remove(0);
+        }
+        self.logs.push(message);
+    }
+
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<(), AppError> {
         match key_event.code {
             KeyCode::Up => {
@@ -204,12 +216,26 @@ impl App {
                 }
             }
             KeyCode::Esc => {
+                self.add_log(LogMessage::info("Quit requested."));
                 self.exit = true;
             }
             KeyCode::Enter => {
                 if self.focused_pane == FocusedPane::CommandInput {
-                    self.game_core.execute_command(&self.input_buffer)?;
-                    self.input_buffer.clear();
+                    let input = self.input_buffer.trim().to_string();
+                    if !input.is_empty() {
+                        match self.game_core.execute_command(&input) {
+                            Ok(Some(success_msg)) => {
+                                self.add_log(LogMessage::success(&success_msg));
+                            }
+                            Ok(None) => {
+                                self.add_log(LogMessage::success("Command executed successfully."));
+                            }
+                            Err(err) => {
+                                self.add_log(LogMessage::error(&err.to_string()));
+                            }
+                        }
+                    }
+                    self.input_buffer.clear(); // Clear buffer after processing
                 }
             }
             KeyCode::Char(c) => {
