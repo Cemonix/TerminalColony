@@ -27,7 +27,7 @@ impl Error for CommandError {}
 // =================================================================================================
 
 #[derive(Debug, Clone)]
-struct ParsedCommand {
+pub struct ParsedCommand {
     name: String,
     definition: CommandDefinition,
     args: Vec<String>,
