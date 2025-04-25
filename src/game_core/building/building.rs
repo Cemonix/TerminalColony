@@ -35,7 +35,7 @@ pub trait Building {
     fn upgrade(&mut self) -> Result<(), BuildingError>;
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum BuildingTypeId {
     CommandCenter,
     OrbitalShipyard,
@@ -45,7 +45,38 @@ pub enum BuildingTypeId {
     MineralMine,
     BatteryArray,
     GasTank,
-    MineralStorage,
+    MineralSilo,
+}
+
+impl BuildingTypeId {
+    pub fn get_name(&self) -> &str {
+        match self {
+            Self::CommandCenter => "CommandCenter",
+            Self::OrbitalShipyard => "OrbitalShipyard",
+            Self::ResearchLab => "ResearchLab",
+            Self::FusionReactor => "FusionReactor",
+            Self::GasExtractor => "GasExtractor",
+            Self::MineralMine => "MineralMine",
+            Self::BatteryArray => "BatteryArray",
+            Self::GasTank => "GasTank",
+            Self::MineralSilo => "MineralSilo",
+        }
+    }
+
+    pub fn all() -> &'static [BuildingTypeId] {
+        use BuildingTypeId::*;
+        &[
+            CommandCenter,
+            OrbitalShipyard,
+            ResearchLab,
+            FusionReactor,
+            GasExtractor,
+            MineralMine,
+            BatteryArray,
+            GasTank,
+            MineralSilo,
+        ]
+    }
 }
 
 impl fmt::Display for BuildingTypeId {
@@ -59,7 +90,7 @@ impl fmt::Display for BuildingTypeId {
             Self::MineralMine => write!(f, "Mineral Mine"),
             Self::BatteryArray => write!(f, "Battery Array"),
             Self::GasTank => write!(f, "Gas Tank"),
-            Self::MineralStorage => write!(f, "Mineral Storage"),
+            Self::MineralSilo => write!(f, "Mineral Silo"),
         }
     }
 }
@@ -74,7 +105,7 @@ pub enum BuildingType {
     MineralMine(Productor),
     BatteryArray(Storage),
     GasTank(Storage),
-    MineralStorage(Storage),
+    MineralSilo(Storage),
 }
 
 impl BuildingType {
@@ -88,7 +119,30 @@ impl BuildingType {
             Self::MineralMine(_) => BuildingTypeId::MineralMine,
             Self::BatteryArray(_) => BuildingTypeId::BatteryArray,
             Self::GasTank(_) => BuildingTypeId::GasTank,
-            Self::MineralStorage(_) => BuildingTypeId::MineralStorage,
+            Self::MineralSilo(_) => BuildingTypeId::MineralSilo,
+        }
+    }
+
+    pub fn new_zero(id: BuildingTypeId, building_config: BuildingConfig) -> Self {
+        match id {
+            BuildingTypeId::FusionReactor => 
+                Self::FusionReactor(Productor::new("Fusion Reactor", 0, Resource::Energy, building_config)),
+            BuildingTypeId::GasExtractor =>
+                Self::GasExtractor(Productor::new("Gas Extractor", 0, Resource::Gas, building_config)),
+            BuildingTypeId::MineralMine =>
+                Self::MineralMine(Productor::new("Mineral Mine", 0, Resource::Minerals, building_config)),
+            BuildingTypeId::BatteryArray =>
+                Self::BatteryArray(Storage::new("Battery Array", 0, Resource::Energy, building_config)),
+            BuildingTypeId::GasTank =>
+                Self::GasTank(Storage::new("Gas Tank", 0, Resource::Gas, building_config)),
+            BuildingTypeId::MineralSilo =>
+                Self::MineralSilo(Storage::new("Mineral Storage", 0, Resource::Minerals, building_config)),
+            BuildingTypeId::CommandCenter =>
+                Self::CommandCenter(BuildingBase::new("Command Center", 0, building_config)),
+            BuildingTypeId::OrbitalShipyard =>
+                Self::OrbitalShipyard(BuildingBase::new("Orbital Shipyard", 0, building_config)),
+            BuildingTypeId::ResearchLab =>
+                Self::ResearchLab(BuildingBase::new("Research Lab", 0, building_config)),
         }
     }
 }
@@ -104,7 +158,7 @@ impl Building for BuildingType {
             | Self::MineralMine(productor) => &productor.get_name(),
             Self::BatteryArray(storage)
             | Self::GasTank(storage)
-            | Self::MineralStorage(storage) => &storage.get_name(),
+            | Self::MineralSilo(storage) => &storage.get_name(),
         }
     }
 
@@ -118,7 +172,7 @@ impl Building for BuildingType {
             | Self::MineralMine(productor) => productor.get_level(),
             Self::BatteryArray(storage)
             | Self::GasTank(storage)
-            | Self::MineralStorage(storage) => storage.get_level(),
+            | Self::MineralSilo(storage) => storage.get_level(),
         }
     }
 
@@ -132,7 +186,7 @@ impl Building for BuildingType {
             | Self::MineralMine(productor) => productor.upgrade(),
             Self::BatteryArray(storage)
             | Self::GasTank(storage)
-            | Self::MineralStorage(storage) => storage.upgrade(),
+            | Self::MineralSilo(storage) => storage.upgrade(),
         }
     }
 }
@@ -182,6 +236,24 @@ pub struct Productor {
 }
 
 impl Productor {
+    pub fn new(name: &str, level: u8, resource: Resource, building_config: BuildingConfig) -> Self {
+        let production_rate = match &building_config.get_production() {
+            Some(production) => {
+                match production.get_rate_for_level(level as usize) {
+                    Some(rate) => rate as u32,
+                    None => 0,
+                }
+            }
+            None => 0,
+        };
+
+        Productor {
+            building: BuildingBase::new(name, level, building_config),
+            resource: resource,
+            production_rate: production_rate
+        }
+    }
+
     pub fn get_resource(&self) -> &Resource {
         &self.resource
     }
@@ -201,7 +273,7 @@ impl Building for Productor {
     }
 
     fn upgrade(&mut self) -> Result<(), BuildingError> {
-        self.building.upgrade();
+        self.building.upgrade()?;
 
         match &self.building.building_config.get_production() {
             Some(production) => {
@@ -231,12 +303,38 @@ pub struct Storage {
 }
 
 impl Storage {
+    pub fn new(name: &str, level: u8, resource: Resource, building_config: BuildingConfig) -> Self {
+        let capacity = match &building_config.get_storage() {
+            Some(storage) => {
+                match storage.get_capacity_for_level(level as usize) {
+                    Some(capacity) => capacity as u32,
+                    None => 0,
+                }
+            }
+            None => 0,
+        };
+
+        Storage {
+            building: BuildingBase::new(name, level, building_config),
+            resource: resource,
+            capacity: capacity,
+            current_amount: 0,
+        }
+    }
+
     pub fn get_capacity(&self) -> u32 {
         self.capacity
     }
 
     pub fn get_current_amount(&self) -> u32 {
         self.current_amount
+    }
+
+    pub fn add_resource(&mut self, amount_to_add: u32) -> u32 {
+        let available_space = self.capacity.saturating_sub(self.current_amount);
+        let actual_added = std::cmp::min(amount_to_add, available_space);
+        self.current_amount += actual_added;
+        actual_added
     }
 }
 
@@ -250,7 +348,7 @@ impl Building for Storage {
     }
 
     fn upgrade(&mut self) -> Result<(), BuildingError> {
-        self.building.upgrade();
+        self.building.upgrade()?;
 
         match &self.building.building_config.get_storage() {
             Some(storage) => {
