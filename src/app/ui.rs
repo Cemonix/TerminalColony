@@ -23,6 +23,7 @@ impl UI {
         show_cursor: bool,
         command_input_focused: bool,
         status_focused: bool,
+        current_turn: u32,
         player_name: &str,
         planet_status: Option<&PlanetStatus>,
     ) {
@@ -56,6 +57,7 @@ impl UI {
             frame,
             top_layout[0],
             status_focused,
+            current_turn,
             player_name,
             planet_status,
         );
@@ -78,6 +80,7 @@ impl UI {
         frame: &mut Frame,
         area: Rect,
         is_focused: bool,
+        current_turn: u32,
         player_name: &str,
         planet_status: Option<&PlanetStatus>,
     ) {
@@ -98,6 +101,7 @@ impl UI {
             .direction(Direction::Vertical)
             .margin(1) // Add margin inside the block
             .constraints([
+                Constraint::Length(1), // Current Turn
                 Constraint::Length(1), // Player Name
                 Constraint::Length(1), // Planet Name + Arrows
                 Constraint::Min(1),    // Building List (takes remaining space)
@@ -107,10 +111,13 @@ impl UI {
                 Constraint::Length(1), // Gas Prod/Storage
             ])
             .split(status_block.inner(area)); // Apply layout *inside* the block
-
+        
+        let turn_line = Line::from(format!("Turn: {}", current_turn)).alignment(Alignment::Center);
+        frame.render_widget(Paragraph::new(turn_line), status_layout[0]);
+    
         // Player Name (Centered)
         let player_line = Line::from(player_name).alignment(Alignment::Center);
-        frame.render_widget(Paragraph::new(player_line), status_layout[0]);
+        frame.render_widget(Paragraph::new(player_line), status_layout[1]);
 
         // --- Use data from planet_status if Some, otherwise show defaults ---
         if let Some(status) = planet_status {
@@ -120,7 +127,7 @@ impl UI {
                 status.planet_name.clone()
             };
             let planet_line = Line::from(planet_display).alignment(Alignment::Center);
-            frame.render_widget(Paragraph::new(planet_line), status_layout[1]);
+            frame.render_widget(Paragraph::new(planet_line), status_layout[2]);
 
             // Building List
             let building_items: Vec<ListItem> = status
@@ -130,12 +137,12 @@ impl UI {
                 .collect();
             let building_list = List::new(building_items)
                 .block(Block::default().title("Buildings"));
-            frame.render_widget(building_list, status_layout[2]);
+            frame.render_widget(building_list, status_layout[3]);
 
             // Production & Storage Title
             frame.render_widget(
                 Paragraph::new("Production / Storage").alignment(Alignment::Center),
-                status_layout[3]
+                status_layout[4]
             );
 
             // Helper closure to get prod/storage safely
@@ -153,21 +160,21 @@ impl UI {
             // Display Production & Storage
             frame.render_widget(
                 Paragraph::new(format!("Energy:   +{}/t | {}/{}", energy_prod, energy_curr, energy_cap)),
-                status_layout[4]
-            );
-            frame.render_widget(
-                Paragraph::new(format!("Minerals: +{}/t | {}/{}", min_prod, min_curr, min_cap)),
                 status_layout[5]
             );
             frame.render_widget(
-                Paragraph::new(format!("Gas:      +{}/t | {}/{}", gas_prod, gas_curr, gas_cap)),
+                Paragraph::new(format!("Minerals: +{}/t | {}/{}", min_prod, min_curr, min_cap)),
                 status_layout[6]
+            );
+            frame.render_widget(
+                Paragraph::new(format!("Gas:      +{}/t | {}/{}", gas_prod, gas_curr, gas_cap)),
+                status_layout[7]
             );
 
         } else {
             let placeholder = Paragraph::new("No planet data available.")
                 .alignment(Alignment::Center);
-            frame.render_widget(placeholder, status_layout[1]);
+            frame.render_widget(placeholder, status_layout[2]);
         }
 
         frame.render_widget(status_block, area);
