@@ -1,9 +1,14 @@
-use std::error::Error;
+use std::{collections::HashMap, error::Error};
 use std::fmt::Display;
 use std::path::Path;
 
+use serde::de::Error as SerdeError;
+use toml::de::Error as TomlError;
+
+use super::building::BuildingTypeId;
+use super::command::EndTurnCommand;
 use super::{
-    planet::PlanetStatus, BuildingsConfig, BuildingsConfigError, CommandError, CommandLoadError, CommandRegistry, Planet, PlanetError, Player, Turn
+    command::CommandExecution, planet::PlanetStatus, BuildingsConfig, BuildingsConfigError, CommandError, CommandLoadError, CommandRegistry, Planet, PlanetError, Player, Turn
 };
 
 #[derive(Debug)]
@@ -66,8 +71,9 @@ pub struct GameCore {
     command_registry: CommandRegistry,
     buildings_config: BuildingsConfig,
     turn: Turn,
-    current_player: usize,
-    players: Vec<Player>
+    current_player: String,
+    players: HashMap<String, Player>,
+    is_running: bool,
 }
 
 impl GameCore {
@@ -86,62 +92,132 @@ impl GameCore {
         };
 
         // TODO: Number of players created should be set by the user via ui
-        let command_center = buildings_config.buildings["CommandCenter"].clone();
         let player1 = Player::new(
             "Player 1", 
-            "Planet 1", 
-            command_center
+            "Planet1", 
+            &buildings_config
         );
 
         Ok(
             GameCore {
                 command_registry,
                 buildings_config,
-                turn: Turn::new(0),
-                current_player: 0,
-                players: vec![player1],
+                turn: Turn::new(1),
+                current_player: "Player 1".to_string(),
+                players: HashMap::from([
+                    (player1.get_name().to_string(), player1),
+                ]),
+                is_running: true,
             }
         )
     }
 
-    pub fn get_current_player_name(&self) -> String { // Renamed for clarity
-        self.players
-            .get(self.current_player)
-            .map(|p| p.get_name().to_string())
-            .unwrap_or_else(|| "Unknown Player".to_string())
+    pub fn is_running(&self) -> bool {
+        self.is_running
     }
 
-    pub fn get_current_player_planet_status(&self, planet_index: usize) -> Option<PlanetStatus> {
-        self.players.get(self.current_player).and_then(|player| {
-            let planets = player.get_planets();
-            let total_planet_count = planets.len();
-            planets
-                .get(planet_index)
-                .map(|planet| planet.get_status(total_planet_count))
+    pub fn get_current_turn(&self) -> u32 {
+        self.turn.get_turn_number()
+    }
+
+    pub fn get_current_player_name(&self) -> String {
+        self.current_player.clone()
+    }
+
+    pub fn get_current_player_planet_names(&self) -> Vec<String> {
+        self.players.get(self.current_player.as_str()).map_or(vec![], |player| {
+            player.get_planet_names()
+        })
+    }
+
+    pub fn get_current_player_planet_status(&self, planet_name: &str) -> Option<PlanetStatus> {
+        self.players.get(self.current_player.as_str()).and_then(|player| {
+            player.get_planet(planet_name).map(|planet| {
+                planet.get_status(player.get_planets_count())
+            })
         })
     }
 
     pub fn get_planet_count(&self) -> usize {
-        self.players
-           .get(self.current_player)
-           .map(|player| player.get_planets().len())
-           .unwrap_or(0)
-   }
-    
-    pub fn add_player(&mut self, player: Player) {
-        self.players.push(player);
+        self.players.get(self.current_player.as_str()).map_or(0, |player| {
+            player.get_planets_count()
+        })
     }
-
+    
     pub fn remove_player(&mut self, player_name: &str) {
-        self.players.retain(|player| player.get_name() != player_name);
+        self.players.remove(player_name);
     }
 
     pub fn execute_command(
         &mut self,
         command: &str,
     ) -> Result<(), GameCoreError> {
-        let command = self.command_registry.parse(command)?;
-        // TODO: Figure out how to handle the command execution
+        let command = CommandExecution::parse(&self.command_registry, command)?;
+        
+        match command {
+            CommandExecution::Build(build_command) => {
+                let player = self.players.get_mut(&self.current_player).ok_or_else(|| {
+                    GameCoreError::CommandError(CommandError::new("Current player not found."))
+                })?;
+
+                let planet = player.get_mut_planet(build_command.get_planet()).ok_or_else(|| {
+                    GameCoreError::CommandError(
+                        CommandError::new(&format!("Planet '{}' not found.", build_command.get_planet()))
+                    )
+                })?;
+
+                // Find the BuildingTypeId corresponding to the name
+                let building_name_to_build = build_command.get_building();
+                let target_building_id = BuildingTypeId::all()
+                   .iter()
+                   .find(|&&id| id.get_name().eq_ignore_ascii_case(building_name_to_build))
+                   .cloned()
+                   .ok_or_else(
+                    || GameCoreError::CommandError(
+                            CommandError::new(&format!("Building '{}' not recognized.", building_name_to_build))
+                        )
+                    )?;
+
+
+                let building_config = self.buildings_config.buildings.get(
+                    target_building_id.get_name()
+                ).ok_or_else(|| {
+                    // This should ideally not happen if BuildingTypeId::all() is consistent with config keys
+                    GameCoreError::BuildingConfigError(
+                        BuildingsConfigError::Toml(
+                            TomlError::custom(
+                                format!("Building '{}' not found in config.", target_building_id.get_name())
+                            )
+                        )
+                    )
+               })?;
+
+               planet.build(target_building_id, building_config)?;
+
+               // TODO: Deduct resources from the planet AFTER successful build/upgrade call
+               // This part is complex as it needs access to upgrade costs based on the *next* level
+               // and mutable access to storage buildings. Needs further implementation.
+
+               // TODO: Log success or return Ok
+           }
+            CommandExecution::EndTurn(_end_turn_command) => { //
+                let player = self.players.get_mut(&self.current_player).ok_or_else(|| {
+                    GameCoreError::CommandError(CommandError::new("Current player not found."))
+                })?;
+
+                player.process_turn_end()?;
+                self.turn.next_turn();
+
+                // TODO: Handle switching to the next player if multiple players exist
+             }
+            CommandExecution::Quit(_) => {
+                self.is_running = false;
+            }
+            _ => {
+                return Err(GameCoreError::CommandError(CommandError::new("Unknown command.")));
+            }
+        }
+
         Ok(())
     }
 }
